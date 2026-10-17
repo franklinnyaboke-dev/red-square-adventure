@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width, initial-scale=1, maximum-scale=1">
+
+<title>Red Square Adventure</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #101322;
+  color: white;
+  font-family: Arial, sans-serif;
+  user-select: none;
+}
+
+#layout {
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 8px;
+  padding: 8px;
+}
+
+#controls {
+  display: grid;
+  grid-template-columns: repeat(3, 43px);
+  grid-template-rows: repeat(2, 43px);
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+button {
+  color: white;
+  background: #303952;
+  border: 1px solid #65749c;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 18px;
+  touch-action: none;
+}
+
+button:active {
+  background: #52658f;
+}
+
+#up {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+#left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+#down {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+#right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+#center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+h2 {
+  margin: 0 0 5px;
+  font-size: 17px;
+  text-align: center;
+  color: #ffe66d;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  max-height: 76vh;
+  background: #080b13;
+  border: 2px solid #53617e;
+  border-radius: 8px;
+}
+
+#panel {
+  width: 88px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 13px;
+}
+
+.stat {
+  margin: 8px 0;
+}
+
+.value {
+  font-size: 21px;
+  color: #ffe66d;
+  font-weight: bold;
+}
+
+#healthBar {
+  width: 78px;
+  height: 9px;
+  background: #444;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 5px auto;
+}
+
+#healthFill {
+  height: 100%;
+  width: 100%;
+  background: #36e57c;
+  transition: width 0.2s;
+}
+
+.panelButton {
+  display: block;
+  width: 84px;
+  padding: 7px 2px;
+  margin: 6px auto;
+  font-size: 12px;
+  background: #34466f;
+  touch-action: manipulation;
+}
+
+#overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 8, 20, 0.88);
+  padding: 12px;
+}
+
+#card {
+  width: min(90%, 360px);
+  max-height: 95%;
+  overflow: auto;
+  text-align: center;
+  padding: 20px;
+  background: #18213b;
+  border: 2px solid #ffe66d;
+  border-radius: 18px;
+  box-shadow: 0 0 24px #263a6b;
+}
+
+#card h1 {
+  font-size: 25px;
+  color: #ffe66d;
+  margin: 0 0 10px;
+}
+
+#card p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#mainButton {
+  background: #159b64;
+  padding: 11px 25px;
+  font-size: 17px;
+  margin-top: 8px;
+  touch-action: manipulation;
+}
+
+.smallNote {
+  color: #b7c5e8;
+  font-size: 11px !important;
+}
+
+@media (max-height: 390px) {
+  #controls {
+    grid-template-columns: repeat(3, 35px);
+    grid-template-rows: repeat(2, 35px);
+  }
+
+  #panel {
+    width: 75px;
+  }
+
+  .panelButton {
+    width: 72px;
+    font-size: 11px;
+    padding: 5px 1px;
+  }
+
+  h2 {
+    font-size: 13px;
+  }
+
+  #card {
+    padding: 10px;
+  }
+
+  #card h1 {
+    font-size: 20px;
+  }
+
+  #card p {
+    font-size: 12px;
+    margin: 5px 0;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div id="layout">
+
+  <div id="controls">
+    <button id="up">▲</button>
+    <button id="left">◀</button>
+    <button id="down">▼</button>
+    <button id="right">▶</button>
+  </div>
+
+  <div id="center">
+    <h2>RED SQUARE ADVENTURE</h2>
+    <canvas id="game" width="600" height="400"></canvas>
+  </div>
+
+  <div id="panel">
+    <div>LEVEL</div>
+    <div class="value" id="level">1</div>
+
+    <div class="stat">SCORE</div>
+    <div class="value" id="score">0</div>
+
+    <div class="stat">LIVES ❤️</div>
+    <div class="value" id="lives">❤️❤️❤️</div>
+
+    <div id="healthBar">
+      <div id="healthFill"></div>
+    </div>
+
+    <button class="panelButton" id="musicButton">
+      🎵 Music: ON
+    </button>
+
+    <button class="panelButton" id="restartButton">
+      ↻ Restart
+    </button>
+  </div>
+
+</div>
+
+<div id="overlay">
+  <div id="card">
+    <h1 id="overlayTitle">🎮 RED SQUARE ADVENTURE</h1>
+
+    <p id="overlayText">
+      Collect coins, avoid enemies, and complete every level!
+    </p>
+
+    <p>
+      🟡 Collect 10 coins per level.<br>
+      ❤️ You have 3 lives.<br>
+      👾 Avoid the moving enemies.<br>
+      🗺️ Every level gets harder!
+    </p>
+
+    <button id="mainButton">▶ PLAY GAME</button>
+
+    <p class="smallNote">
+      Tip: Turn your phone horizontally for the best experience.
+    </p>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const W = canvas.width;
+const H = canvas.height;
+
+const overlay = document.getElementById("overlay");
+const overlayTitle = document.getElementById("overlayTitle");
+const overlayText = document.getElementById("overlayText");
+const mainButton = document.getElementById("mainButton");
+
+const scoreDisplay = document.getElementById("score");
+const levelDisplay = document.getElementById("level");
+const livesDisplay = document.getElementById("lives");
+const healthFill = document.getElementById("healthFill");
+const musicButton = document.getElementById("musicButton");
+
+const player = {
+  x: 35,
+  y: 35,
+  size: 24,
+  speed: 4
+};
+
+const coin = {
+  x: 300,
+  y: 200,
+  radius: 10
+};
+
+let enemies = [];
+let score = 0;
+let level = 1;
+let lives = 3;
+
+let running = false;
+let finished = false;
+let musicOn = true;
+
+let audioContext = null;
+let musicTimer = null;
+let musicStep = 0;
+let lastHit = 0;
+
+const keys = {
+  up: false,
+  down: false,
+  left: false,
+  right: false
+};
+
+// ----------------------
+// SOUND SYSTEM
+// ----------------------
+
+function getAudio() {
+  const AudioClass =
+    window.AudioContext || window.webkitAudioContext;
+
+  if (!AudioClass) return null;
+
+  if (!audioContext) {
+    audioContext = new AudioClass();
+  }
+
+  if (audioContext.state === "suspended") {
+    audioContext.resume();
+  }
+
+  return audioContext;
+}
+
+function playTone(freq, duration, type = "sine", volume = 0.12) {
+  try {
+    const audio = getAudio();
+    if (!audio) return;
+
+    const oscillator = audio.createOscillator();
+    const gain = audio.createGain();
+
+    const now = audio.currentTime;
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(freq, now);
+
+    gain.gain.setValueAtTime(volume, now);
+    gain.gain.exponentialRampToValueAtTime(
+      0.001, now + duration
+    );
+
+    oscillator.connect(gain);
+    gain.connect(audio.destination);
+
+    oscillator.start(now);
+    oscillator.stop(now + duration);
+  } catch (e) {
+    // The game can still run without audio.
+  }
+}
+
+function playSound(type) {
+  if (type === "coin") {
+    playTone(720, 0.12);
+    setTimeout(() => playTone(1050, 0.14), 70);
+  }
+
+  if (type === "hit") {
+    playTone(180, 0.3, "sawtooth", 0.15);
+  }
+
+  if (type === "level") {
+    playTone(650, 0.15);
+    setTimeout(() => playTone(850, 0.15), 130);
+    setTimeout(() => playTone(1100, 0.25), 260);
+  }
+
+  if (type === "win") {
+    playTone(700, 0.2);
+    setTimeout(() => playTone(900, 0.2), 160);
+    setTimeout(() => playTone(1200, 0.4), 320);
+  }
+
+  if (type === "lose") {
+    playTone(320, 0.25, "triangle");
+    setTimeout(() => playTone(180, 0.4, "triangle"), 220);
+  }
+}
+
+// Simple generated background music.
+function startMusic() {
+  stopMusic();
+
+  if (!musicOn || !running) return;
+
+  const melody = [
+    392, 494, 587, 494,
+    440, 523, 659, 523,
+    392, 494, 587, 659,
+    587, 494, 440, 392
+  ];
+
+  musicTimer = setInterval(() => {
+    if (!musicOn || !running) return;
+
+    playTone(melody[musicStep % melody.length], 0.18, "sine", 0.035);
+    musicStep++;
+  }, 240);
+}
+
+function stopMusic() {
+  if (musicTimer !== null) {
+    clearInterval(musicTimer);
+    musicTimer = null;
+  }
+}
+
+musicButton.addEventListener("click", () => {
+  musicOn = !musicOn;
+
+  musicButton.textContent =
+    musicOn ? "🎵 Music: ON" : "🔇 Music: OFF";
+
+  if (musicOn) {
+    getAudio();
+    startMusic();
+  } else {
+    stopMusic();
+  }
+});
+
+// ----------------------
+// GAME SETUP
+// ----------------------
+
+function randomPosition() {
+  return {
+    x: 25 + Math.random() * (W - 50),
+    y: 25 + Math.random() * (H - 50)
+  };
+}
+
+function createEnemies() {
+  enemies = [];
+
+  const number = Math.min(2 + level, 8);
+  const speed = 1.2 + level * 0.35;
+
+  for (let i = 0; i < number; i++) {
+    const p = randomPosition();
+
+    enemies.push({
+      x: p.x,
+      y: p.y,
+      size: 23,
+      vx: (Math.random() < 0.5 ? -1 : 1) *
+          (speed + Math.random()),
+      vy: (Math.random() < 0.5 ? -1 : 1) *
+          (speed + Math.random())
+    });
+  }
+}
+
+function placeCoin() {
+  let p = randomPosition();
+  let tries = 0;
+
+  while (tries < 100) {
+    const playerDistance = Math.hypot(
+      p.x - player.x,
+      p.y - player.y
+    );
+
+    const enemyNearby = enemies.some(e =>
+      Math.hypot(
+        p.x - e.x,
+        p.y - e.y
+      ) < 45
+    );
+
+    if (playerDistance > 70 && !enemyNearby) break;
+
+    p = randomPosition();
+    tries++;
+  }
+
+  coin.x = p.x;
+  coin.y = p.y;
+}
+
+function updateStats() {
+  scoreDisplay.textContent = score;
+  levelDisplay.textContent = level;
+  livesDisplay.textContent =
+    "❤️".repeat(Math.max(0, lives)) +
+    "🖤".repeat(Math.max(0, 3 - lives));
+
+  healthFill.style.width = (lives / 3 * 100) + "%";
+
+  if (lives === 1) {
+    healthFill.style.background = "#ff4545";
+  } else {
+    healthFill.style.background = "#36e57c";
+  }
+}
+
+// ----------------------
+// START / RESTART
+// ----------------------
+
+function startGame() {
+  getAudio();
+
+  score = 0;
+  level = 1;
+  lives = 3;
+
+  player.x = 35;
+  player.y = 35;
+
+  finished = false;
+  running = true;
+  lastHit = 0;
+
+  createEnemies();
+  placeCoin();
+  updateStats();
+
+  overlay.style.display = "none";
+
+  startMusic();
+  draw();
+}
+
+function showOverlay(title, description, buttonText) {
+  running = false;
+  stopMusic();
+
+  overlayTitle.textContent = title;
+  overlayText.textContent = description;
+  mainButton.textContent = buttonText;
+  overlay.style.display = "flex";
+}
+
+mainButton.addEventListener("click", () => {
+  startGame();
+});
+
+document.getElementById("restartButton").addEventListener(
+  "click", () => {
+    showOverlay(
+      "🎮 RED SQUARE ADVENTURE",
+      "Ready to try again? Collect coins and avoid enemies!",
+      "▶ PLAY AGAIN"
+    );
+  }
+);
+
+// ----------------------
+// MOVEMENT
+// ----------------------
+
+function movePlayer() {
+  if (keys.up) player.y -= player.speed;
+  if (keys.down) player.y += player.speed;
+  if (keys.left) player.x -= player.speed;
+  if (keys.right) player.x += player.speed;
+
+  player.x = Math.max(0, Math.min(W - player.size, player.x));
+  player.y = Math.max(0, Math.min(H - player.size, player.y));
+}
+
+function moveEnemies() {
+  for (const enemy of enemies) {
+    enemy.x += enemy.vx;
+    enemy.y += enemy.vy;
+
+    if (enemy.x < 0) {
+      enemy.x = 0;
+      enemy.vx = Math.abs(enemy.vx);
+    }
+
+    if (enemy.x + enemy.size > W) {
+      enemy.x = W - enemy.size;
+      enemy.vx = -Math.abs(enemy.vx);
+    }
+
+    if (enemy.y < 0) {
+      enemy.y = 0;
+      enemy.vy = Math.abs(enemy.vy);
+    }
+
+    if (enemy.y + enemy.size > H) {
+      enemy.y = H - enemy.size;
+      enemy.vy = -Math.abs(enemy.vy);
+    }
+  }
+}
+
+function overlaps(a, b) {
+  return (
+    a.x < b.x + b.size &&
+    a.x + a.size > b.x &&
+    a.y < b.y + b.size &&
+    a.y + a.size > b.y
+  );
+}
+
+// ----------------------
+// COINS AND LEVELS
+// ----------------------
+
+function collectCoin() {
+  const px = player.x + player.size / 2;
+  const py = player.y + player.size / 2;
+
+  const distance = Math.hypot(
+    px - coin.x,
+    py - coin.y
+  );
+
+  if (distance < player.size / 2 + coin.radius) {
+    score++;
+    playSound("coin");
+
+    if (score > 0 && score % 10 === 0) {
+      level++;
+
+      if (level > 5) {
+        finished = true;
+        playSound("win");
+
+        showOverlay(
+          "🏆 YOU ARE A CHAMPION!",
+          "You completed all 5 levels! Amazing work!",
+          "PLAY AGAIN"
+        );
+
+        return;
+      }
+
+      playSound("level");
+      player.speed = Math.min(4 + (level - 1) * 0.3, 5.5);
+
+      createEnemies();
+
+      showOverlay(
+        "🌟 LEVEL " + level + "!",
+        "Great job! The enemies are faster now. Press Play to continue.",
+        "CONTINUE"
+      );
+
+      updateStats();
+      return;
+    }
+
+    updateStats();
+    placeCoin();
+  }
+}
+
+// ----------------------
+// LIVES
+// ----------------------
+
+function checkEnemyCollision() {
+  const now = Date.now();
+
+  // Brief protection after losing a life.
+  if (now - lastHit < 1200) return;
+
+  for (const enemy of enemies) {
+    if (overlaps(player, enemy)) {
+      lives--;
+      lastHit = now;
+
+      playSound("hit");
+      updateStats();
+
+      player.x = 35;
+      player.y = 35;
+
+      if (lives <= 0) {
+        finished = true;
+        playSound("lose");
+
+        showOverlay(
+          "💥 GAME OVER",
+          "You ran out of lives! Try again and collect more coins.",
+          "TRY AGAIN"
+        );
+      }
+
+      return;
+    }
+  }
+}
+
+// ----------------------
+// DRAW
+// ----------------------
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = "#161d31";
+  ctx.lineWidth = 1;
+
+  for (let x = 0; x <= W; x += 40) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+
+  for (let y = 0; y <= H; y += 40) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+  }
+
+  // Coin glow
+  ctx.save();
+  ctx.shadowColor = "#ffe66d";
+  ctx.shadowBlur = 16;
+
+  ctx.beginPath();
+  ctx.arc(coin.x, coin.y, coin.radius, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffe66d";
+  ctx.fill();
+
+  ctx.restore();
+
+  // Player
+  ctx.save();
+  ctx.shadowColor = "#ff4545";
+  ctx.shadowBlur = 14;
+
+  // Blink briefly after being hit.
+  if (Date.now() - lastHit < 1200 &&
+      Math.floor(Date.now() / 120) % 2 === 0) {
+    ctx.globalAlpha = 0.35;
+  }
+
+  ctx.fillStyle = "#ff4545";
+  ctx.fillRect(player.x, player.y, player.size, player.size);
+
+  ctx.restore();
+
+  // Enemies
+  for (const enemy of enemies) {
+    ctx.save();
+    ctx.shadowColor = "#c76bff";
+    ctx.shadowBlur = 12;
+
+    ctx.fillStyle = "#a64dff";
+    ctx.fillRect(
+      enemy.x, enemy.y,
+      enemy.size, enemy.size
+    );
+
+    ctx.strokeStyle = "#e3c4ff";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(
+      enemy.x, enemy.y,
+      enemy.size, enemy.size
+    );
+
+    ctx.restore();
+  }
+}
+
+// ----------------------
+// MAIN LOOP
+// ----------------------
+
+function gameLoop() {
+  if (running && !finished) {
+    movePlayer();
+    moveEnemies();
+    collectCoin();
+
+    if (running && !finished) {
+      checkEnemyCollision();
+    }
+
+    draw();
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ----------------------
+// TOUCH CONTROLS
+// ----------------------
+
+function connectButton(id, key) {
+  const button = document.getElementById(id);
+
+  button.addEventListener("pointerdown", event => {
+    event.preventDefault();
+    keys[key] = true;
+  });
+
+  function release() {
+    keys[key] = false;
+  }
+
+  button.addEventListener("pointerup", release);
+  button.addEventListener("pointercancel", release);
+  button.addEventListener("pointerleave", release);
+  button.addEventListener("lostpointercapture", release);
+}
+
+connectButton("up", "up");
+connectButton("down", "down");
+connectButton("left", "left");
+connectButton("right", "right");
+
+// Keyboard controls for testing.
+document.addEventListener("keydown", event => {
+  if (event.key === "ArrowUp") keys.up = true;
+  if (event.key === "ArrowDown") keys.down = true;
+  if (event.key === "ArrowLeft") keys.left = true;
+  if (event.key === "ArrowRight") keys.right = true;
+});
+
+document.addEventListener("keyup", event => {
+  if (event.key === "ArrowUp") keys.up = false;
+  if (event.key === "ArrowDown") keys.down = false;
+  if (event.key === "ArrowLeft") keys.left = false;
+  if (event.key === "ArrowRight") keys.right = false;
+});
+
+// Initial screen.
+updateStats();
+draw();
+gameLoop();
+</script>
+
+</body>
+</html>
